@@ -1,6 +1,38 @@
 import Image from "next/image";
 
-export default function Home() {
+// Định nghĩa kiểu dữ liệu cho friends
+type Friend = {
+  name: string;
+};
+
+// Sử dụng async component thay cho getServerSideProps
+export default async function Home() {
+  // Di chuyển logic fetch data vào component
+  let friends: Friend[] = [];
+
+  try {
+    const response = await fetch(process.env.NEXT_PUBLIC_HASURA_PROJECT_ENDPOINT as string, {
+      method: "POST",
+      headers: {
+        "x-hasura-admin-secret": process.env.HASURA_GRAPHQL_ADMIN_SECRET as string
+      },
+      body: JSON.stringify({
+        query: `query {
+                  friend {
+                    name
+                  }
+                }`
+      })
+    });
+
+    const result = await response.json();
+    const data = result.data;
+    friends = data.friend;
+    console.log(result);
+  } catch (error) {
+    console.log(error);
+  }
+
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
@@ -24,6 +56,18 @@ export default function Home() {
             Hello World
           </li>
         </ol>
+
+        {/* Hiển thị danh sách friends */}
+        {friends.length > 0 && (
+          <div className="mt-4">
+            <h2 className="font-bold mb-2">Friends:</h2>
+            <ul className="list-disc pl-5">
+              {friends.map((friend, index) => (
+                <li key={index}>{friend.name}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div className="flex gap-4 items-center flex-col sm:flex-row">
           <a
